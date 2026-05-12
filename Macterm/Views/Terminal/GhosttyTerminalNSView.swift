@@ -110,10 +110,21 @@ final class GhosttyTerminalNSView: NSView {
 
     deinit {
         if let surface { ghostty_surface_free(surface) }
+        for token in windowObservers {
+            NotificationCenter.default.removeObserver(token)
+        }
     }
+
+    nonisolated(unsafe) private var windowObservers: [NSObjectProtocol] = []
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        // Tear down previous window's observers.
+        for token in windowObservers {
+            NotificationCenter.default.removeObserver(token)
+        }
+        windowObservers.removeAll()
+
         guard let window else { return }
         if surface == nil {
             createSurface()
@@ -128,6 +139,27 @@ final class GhosttyTerminalNSView: NSView {
             ghostty_surface_set_focus(surface, isFocused)
         }
         updateMetalLayerSize()
+
+        // The per-view `viewDidChangeBackingProperties` override doesn't reliably
+        // fire when the window moves between displays of different DPI. Listen
+        // on the window directly so the surface picks up the new scale even
+        // when AppKit doesn't propagate the call to every layer-backed subview.
+        let handler: (Notification) -> Void = { [weak self] _ in
+            MainActor.assumeIsolated { self?.updateMetalLayerSize() }
+        }
+        let backing = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeBackingPropertiesNotification,
+            object: window,
+            queue: .main,
+            using: handler
+        )
+        let screen = NotificationCenter.default.addObserver(
+            forName: NSWindow.didChangeScreenNotification,
+            object: window,
+            queue: .main,
+            using: handler
+        )
+        windowObservers = [backing, screen]
     }
 
     override func setFrameSize(_ newSize: NSSize) {

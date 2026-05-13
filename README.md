@@ -39,6 +39,10 @@ Since the app isn't signed with an Apple Developer certificate, macOS will block
 xattr -cr /Applications/Macterm.app
 ```
 
+## Demo
+
+![demo](./assets/demo.gif)
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, build, and PR guidelines.

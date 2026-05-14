@@ -53,7 +53,21 @@ final class QuickTerminalService: NSObject {
             name: UserDefaults.didChangeNotification,
             object: nil
         )
+        // Re-apply the blur radius when ghostty.conf changes so the visible
+        // panel picks up Settings adjustments without needing to be re-shown.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(reapplyBlur),
+            name: .mactermConfigDidChange,
+            object: nil
+        )
         if isEnabled { registerHotKey() }
+    }
+
+    @objc
+    private func reapplyBlur() {
+        guard let panel, isVisible else { return }
+        setWindowBackgroundBlur(panel, radius: Preferences.shared.windowBlurRadius)
     }
 
     @objc
@@ -162,6 +176,8 @@ final class QuickTerminalService: NSObject {
             previousFrontmostApp = frontmost
         }
         panel.makeKeyAndOrderFront(nil)
+        // Apply the current blur radius (0 = no blur) for this panel session.
+        setWindowBackgroundBlur(panel, radius: Preferences.shared.windowBlurRadius)
         if let focusedID = splitState.focusedPaneID {
             FocusRestoration.restoreFocus(to: focusedID, in: splitState.splitRoot, window: panel)
         }
@@ -349,7 +365,7 @@ private struct QuickTerminalView: View {
             onToggleZoom: { state.tab.toggleZoom(paneID: $0) }
         )
         .id(renderedNode.id)
-        .background(Color(nsColor: GhosttyApp.shared.backgroundColor))
+        .background(MactermTheme.bgWithOpacity)
         .overlay(alignment: .topTrailing) {
             if let zoomID = state.tab.zoomedPaneID {
                 ZoomIndicator(onExit: { state.tab.toggleZoom(paneID: zoomID) })

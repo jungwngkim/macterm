@@ -16,16 +16,11 @@ final class PaletteResponder: KeyResponder {
     }
 
     func handle(_ event: NSEvent) -> KeyDisposition {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let key = (event.charactersIgnoringModifiers ?? "").lowercased()
-        if flags == .command, key == "p" {
+        if HotkeyRegistry.matches(event, action: .toggleCommandPalette) {
             appState.isCommandPaletteVisible.toggle()
             return .handled
         }
         // While the palette is visible, SwiftUI owns arrow / escape / etc.
-        if appState.isCommandPaletteVisible {
-            return .passThrough
-        }
         return .passThrough
     }
 }

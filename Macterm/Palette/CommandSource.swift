@@ -129,6 +129,12 @@ struct CommandSource: PaletteSource {
             action = { ctx.appState.sidebarVisible.toggle() }
         case .closeWindow:
             action = { (NSApp.delegate as? AppDelegate)?.mainWindow?.orderOut(nil) }
+        case .toggleCommandPalette:
+            // No palette entry for opening the palette — by definition the
+            // palette has to already be open to see it. The action still
+            // needs to exist in AppCommand so Settings → Keymaps can show
+            // and rebind its hotkey.
+            return nil
         }
 
         guard let action else { return nil }

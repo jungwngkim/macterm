@@ -90,6 +90,7 @@ struct WelcomeView: View {
     private var shortcuts: [(HotkeyAction, String)] {
         [
             (.openProject, "Open a project"),
+            (.toggleCommandPalette, "Command palette"),
             (.toggleSidebar, "Toggle sidebar"),
         ]
     }
@@ -136,6 +137,7 @@ struct EmptyProjectView: View {
         [
             (.newTab, "New tab"),
             (.openProject, "Open another project"),
+            (.toggleCommandPalette, "Command palette"),
             (.toggleSidebar, "Toggle sidebar"),
         ]
     }

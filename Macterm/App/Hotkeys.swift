@@ -29,6 +29,7 @@ enum HotkeyAction: String, CaseIterable, Identifiable {
     case closeWindow = "close_window"
     case openProject = "open_project"
     case zoomPane = "zoom_pane"
+    case toggleCommandPalette = "toggle_command_palette"
 
     var id: String { rawValue }
 
@@ -61,6 +62,7 @@ enum HotkeyAction: String, CaseIterable, Identifiable {
         case .closeWindow: "cmd+shift+w"
         case .openProject: "cmd+o"
         case .zoomPane: "cmd+shift+return"
+        case .toggleCommandPalette: "cmd+p"
         }
     }
 }

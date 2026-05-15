@@ -49,10 +49,11 @@ final class QuickTerminalResponder: KeyResponder {
         guard qt.isVisible else { return .passThrough }
         let state = qt.splitState
 
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-
-        // Ctrl+` toggles the quick terminal itself.
-        if event.keyCode == 50, flags.contains(.control) {
+        // Quick-terminal toggle keystroke arrived while Macterm itself is
+        // active. The same shortcut is also registered as a Carbon global
+        // hot key (see QuickTerminalService.registerHotKey) for when other
+        // apps are frontmost.
+        if HotkeyRegistry.matches(event, action: .toggleQuickTerminal) {
             NotificationCenter.default.post(name: .toggleQuickTerminal, object: nil)
             return .handled
         }
@@ -131,9 +132,12 @@ final class MainAppResponder: KeyResponder {
         // into the palette would fire Cmd+T's New Tab action.
         if appState.isCommandPaletteVisible { return .passThrough }
 
-        // Global Ctrl+` opens/closes quick terminal.
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        if event.keyCode == 50, flags.contains(.control) {
+
+        // Quick-terminal toggle. The same shortcut is also a Carbon global
+        // hot key (see QuickTerminalService) for when Macterm isn't active;
+        // this branch covers the in-app case.
+        if HotkeyRegistry.matches(event, action: .toggleQuickTerminal) {
             NotificationCenter.default.post(name: .toggleQuickTerminal, object: nil)
             return .handled
         }

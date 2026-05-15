@@ -12,6 +12,9 @@ final class QuickTerminalService: NSObject {
     private(set) var isVisible = false
     private var carbonHotKeyRef: EventHotKeyRef?
     private var carbonEventHandler: EventHandlerRef?
+    /// String form of the shortcut we currently have registered with Carbon,
+    /// so `userDefaultsDidChange` can detect rebinds and re-register.
+    private var lastRegisteredShortcutID: String?
     /// Snapshot of `isEnabled` after the most recent reconcile. Used to detect
     /// flips when `UserDefaults.didChangeNotification` fires, since that
     /// notification doesn't tell us which key changed.
@@ -72,14 +75,26 @@ final class QuickTerminalService: NSObject {
 
     @objc
     private func userDefaultsDidChange() {
+        // Two unrelated keys we react to: the enable toggle and the hotkey
+        // binding. Reconcile both each time since UserDefaults' change
+        // notification doesn't tell us which key changed.
         let now = isEnabled
-        guard now != lastKnownEnabled else { return }
-        lastKnownEnabled = now
-        if now {
-            registerHotKey()
-        } else {
-            if isVisible { hide() }
+        if now != lastKnownEnabled {
+            lastKnownEnabled = now
+            if now {
+                registerHotKey()
+            } else {
+                if isVisible { hide() }
+                unregisterHotKey()
+            }
+        }
+        // Re-register on hotkey-binding changes so a Settings → Keymaps
+        // rebind takes effect immediately, not after restart.
+        let currentBindingID = lastRegisteredShortcutID
+        let newBindingID = HotkeyRegistry.selectedShortcut(for: .toggleQuickTerminal)?.id
+        if now, currentBindingID != newBindingID {
             unregisterHotKey()
+            registerHotKey()
         }
     }
 
@@ -104,6 +119,12 @@ final class QuickTerminalService: NSObject {
         // Idempotent: skip if already registered. Without this, toggling the
         // preference repeatedly would leak event handlers and double-fire.
         guard carbonHotKeyRef == nil else { return }
+        guard let shortcut = HotkeyRegistry.selectedShortcut(for: .toggleQuickTerminal) else {
+            // User cleared the binding — nothing to register. The shortcut
+            // is also unavailable in-app; toggling via the palette or menu
+            // command still works.
+            return
+        }
 
         var hotKeyID = EventHotKeyID()
         hotKeyID.signature = OSType(0x4D55_5859)
@@ -130,8 +151,26 @@ final class QuickTerminalService: NSObject {
             return noErr
         }, 1, &spec, selfPtr, &carbonEventHandler)
 
-        // Ctrl+` (key code 50)
-        RegisterEventHotKey(50, UInt32(controlKey), hotKeyID, GetApplicationEventTarget(), 0, &carbonHotKeyRef)
+        RegisterEventHotKey(
+            UInt32(shortcut.keyCode),
+            Self.carbonModifiers(from: shortcut.modifiers),
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &carbonHotKeyRef
+        )
+        lastRegisteredShortcutID = shortcut.id
+    }
+
+    /// Translate Cocoa modifier flags to Carbon's bitmask. Carbon's hot-key
+    /// API predates Cocoa and uses its own constants.
+    private static func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
+        var mods: UInt32 = 0
+        if flags.contains(.command) { mods |= UInt32(cmdKey) }
+        if flags.contains(.option) { mods |= UInt32(optionKey) }
+        if flags.contains(.control) { mods |= UInt32(controlKey) }
+        if flags.contains(.shift) { mods |= UInt32(shiftKey) }
+        return mods
     }
 
     private func unregisterHotKey() {
@@ -143,6 +182,7 @@ final class QuickTerminalService: NSObject {
             RemoveEventHandler(handler)
             carbonEventHandler = nil
         }
+        lastRegisteredShortcutID = nil
     }
 
     // MARK: - Show / Hide

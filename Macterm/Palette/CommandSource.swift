@@ -137,6 +137,8 @@ struct CommandSource: PaletteSource {
             return nil
         case .reloadGhosttyConfig:
             action = { GhosttyApp.shared.reloadAndReport() }
+        case .toggleQuickTerminal:
+            action = { QuickTerminalService.shared.toggle() }
         }
 
         guard let action else { return nil }

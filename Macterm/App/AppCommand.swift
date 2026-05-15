@@ -37,6 +37,7 @@ enum AppCommand: String, CaseIterable, Identifiable {
     case closeWindow
     case toggleCommandPalette
     case reloadGhosttyConfig
+    case toggleQuickTerminal
 
     var id: String { rawValue }
 
@@ -68,6 +69,7 @@ enum AppCommand: String, CaseIterable, Identifiable {
         case .closeWindow: "Close window"
         case .toggleCommandPalette: "Command palette"
         case .reloadGhosttyConfig: "Reload Ghostty config"
+        case .toggleQuickTerminal: "Toggle quick terminal"
         }
     }
 
@@ -98,7 +100,8 @@ enum AppCommand: String, CaseIterable, Identifiable {
         case .toggleSidebar,
              .closeWindow,
              .toggleCommandPalette,
-             .reloadGhosttyConfig: .window
+             .reloadGhosttyConfig,
+             .toggleQuickTerminal: .window
         }
     }
 
@@ -129,6 +132,7 @@ enum AppCommand: String, CaseIterable, Identifiable {
         case .closeWindow: .closeWindow
         case .toggleCommandPalette: .toggleCommandPalette
         case .reloadGhosttyConfig: .reloadGhosttyConfig
+        case .toggleQuickTerminal: .toggleQuickTerminal
         case .renameTab,
              .renameProject,
              .removeProject: nil

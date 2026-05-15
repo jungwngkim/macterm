@@ -31,6 +31,7 @@ enum HotkeyAction: String, CaseIterable, Identifiable {
     case zoomPane = "zoom_pane"
     case toggleCommandPalette = "toggle_command_palette"
     case reloadGhosttyConfig = "reload_ghostty_config"
+    case toggleQuickTerminal = "toggle_quick_terminal"
 
     var id: String { rawValue }
 
@@ -65,6 +66,7 @@ enum HotkeyAction: String, CaseIterable, Identifiable {
         case .zoomPane: "cmd+shift+return"
         case .toggleCommandPalette: "cmd+p"
         case .reloadGhosttyConfig: "cmd+shift+,"
+        case .toggleQuickTerminal: "ctrl+`"
         }
     }
 }

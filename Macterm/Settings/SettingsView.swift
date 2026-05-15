@@ -165,6 +165,16 @@ private struct QuickTerminalSettings: View {
                     Preferences.shared.quickTerminalHeightFraction = v
                 }
                 .disabled(!enabled)
+
+                LabeledContent(
+                    "Shortcut",
+                    value: HotkeyRegistry.displayString(
+                        for: HotkeyRegistry.selectedShortcutString(for: .toggleQuickTerminal)
+                    )
+                )
+                Text("Rebind in Settings → Keymaps. Works globally, even when Macterm isn't the active app.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

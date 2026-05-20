@@ -147,7 +147,7 @@ private struct TerminalSurface: NSViewRepresentable {
                 "isQuickTerminal": pane.projectID == QuickTerminalService.projectID,
             ]
             let request = UNNotificationRequest(
-                identifier: "macterm-\(pane.id.uuidString)-\(Date().timeIntervalSince1970)",
+                identifier: "macterm-\(pane.id.uuidString)-\(UUID().uuidString)",
                 content: content,
                 trigger: nil
             )
@@ -171,7 +171,7 @@ private struct TerminalSurface: NSViewRepresentable {
                 "isQuickTerminal": pane.projectID == QuickTerminalService.projectID,
             ]
             let request = UNNotificationRequest(
-                identifier: "macterm-\(pane.id.uuidString)-\(Date().timeIntervalSince1970)",
+                identifier: "macterm-\(pane.id.uuidString)-\(UUID().uuidString)",
                 content: content,
                 trigger: nil
             )

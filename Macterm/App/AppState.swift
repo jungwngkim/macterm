@@ -302,8 +302,15 @@ final class AppState {
     }
 
     func navigateToPane(_ paneID: UUID, projectID: UUID) {
-        recordProjectVisit(projectID)
+        guard workspaces[projectID] != nil else {
+            NSApp.activate()
+            if let appDelegate = NSApp.delegate as? AppDelegate {
+                appDelegate.reopenIfNeeded()
+            }
+            return
+        }
         activeProjectID = projectID
+        recordProjectVisit(projectID)
         if let tab = workspaces[projectID]?.tabs.first(where: { $0.splitRoot.findPane(id: paneID) != nil }) {
             workspaces[projectID]?.selectTab(tab.id)
             tab.focusPane(paneID)

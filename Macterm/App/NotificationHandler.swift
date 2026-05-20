@@ -1,3 +1,4 @@
+import os
 import UserNotifications
 
 @MainActor
@@ -6,7 +7,11 @@ final class NotificationHandler: NSObject, @preconcurrency UNUserNotificationCen
     weak var appState: AppState?
 
     func requestAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { granted, _ in
+            if !granted {
+                Logger().notice("Macterm notification authorization denied")
+            }
+        }
     }
 
     func userNotificationCenter(
@@ -24,13 +29,10 @@ final class NotificationHandler: NSObject, @preconcurrency UNUserNotificationCen
         let isQuickTerminal = userInfo["isQuickTerminal"] as? Bool ?? false
         if isQuickTerminal {
             QuickTerminalService.shared.showPanel()
-            if let focusedIDString = userInfo["paneID"] as? String,
-               let focusedID = UUID(uuidString: focusedIDString),
-               QuickTerminalService.shared.splitState.tab.splitRoot.findPane(id: focusedID) != nil
-            {
-                QuickTerminalService.shared.splitState.tab.focusPane(focusedID)
+            if QuickTerminalService.shared.splitState.tab.splitRoot.findPane(id: paneID) != nil {
+                QuickTerminalService.shared.splitState.tab.focusPane(paneID)
                 FocusRestoration.restoreFocus(
-                    to: focusedID,
+                    to: paneID,
                     in: QuickTerminalService.shared.splitState.tab.splitRoot,
                     window: QuickTerminalService.shared.panel
                 )

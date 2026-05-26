@@ -58,9 +58,45 @@ final class GhosttyCallbacks: @unchecked Sendable {
     }
 
     func readClipboard(ud: UnsafeMutableRawPointer?, location: ghostty_clipboard_e, state: UnsafeMutableRawPointer?) -> Bool {
-        let text = NSPasteboard.general.string(forType: .string) ?? ""
+        let text = Self.readPasteboardText() ?? ""
         text.withCString { ghostty_surface_complete_clipboard_request(surface(from: ud), $0, state, false) }
         return true
+    }
+
+    // MARK: - Pasteboard text resolution (shared with GhosttyTerminalNSView)
+
+    /// Characters to escape when pasting paths into the shell.
+    private static let escapeCharacters = "\\ ()[]{}<>\"'`!#$&;|*?\t"
+
+    /// Escape shell-sensitive characters in a string by prefixing each with a
+    /// backslash. Suitable for inserting paths/URLs into a live terminal buffer.
+    private static func shellEscape(_ s: String) -> String {
+        var result = s
+        for char in escapeCharacters {
+            result = result.replacingOccurrences(of: String(char), with: "\\\(char)")
+        }
+        return result
+    }
+
+    /// Returns pasted text from the pasteboard: file paths (Finder drag/copy)
+    /// fall back to plain string. Called by both the context-menu paste path
+    /// and the libghostty Cmd+V clipboard path.
+    static func readPasteboardText() -> String? {
+        let pb = NSPasteboard.general
+
+        // Finder copies files as NSURL data, not strings.
+        if let urls = pb.readObjects(forClasses: [NSURL.self]) as? [URL] {
+            let paths = urls
+                .map { url in
+                    url.isFileURL ? Self.shellEscape(url.path(percentEncoded: false)) : url.absoluteString
+                }
+                .filter { !$0.isEmpty }
+            if !paths.isEmpty {
+                return paths.joined(separator: " ")
+            }
+        }
+
+        return pb.string(forType: .string).flatMap { !$0.isEmpty ? $0 : nil }
     }
 
     func confirmReadClipboard(ud: UnsafeMutableRawPointer?, content: UnsafePointer<CChar>?, state: UnsafeMutableRawPointer?) {

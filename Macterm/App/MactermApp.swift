@@ -219,33 +219,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {
-        let mainHasRunning =
-            appState?.workspaces.values.contains { ws in
-                ws.tabs.contains { tab in
-                    tab.splitRoot.allPanes().contains { $0.nsView?.needsConfirmQuit() == true }
-                }
-            } ?? false
-        let qtHasRunning = QuickTerminalService.shared.splitState.splitRoot
-            .allPanes().contains { $0.nsView?.needsConfirmQuit() == true }
-        let hasRunning = mainHasRunning || qtHasRunning
-
-        if !hasRunning {
+        let rows = collectRunningProcessRows()
+        if rows.isEmpty {
             AppTerminationState.isTerminating = true
             return .terminateNow
         }
 
-        let alert = NSAlert()
-        alert.messageText = "Quit Macterm?"
-        alert.informativeText = "There are still processes running. Quit anyway?"
-        alert.alertStyle = .warning
-        alert.icon = NSApp.applicationIconImage
-        alert.addButton(withTitle: "Quit")
-        alert.addButton(withTitle: "Cancel")
-        if alert.runModal() == .alertFirstButtonReturn {
+        if QuitConfirmation.runModal(rows: rows) {
             AppTerminationState.isTerminating = true
             return .terminateNow
         }
         return .terminateCancel
+    }
+
+    /// Walk every workspace + the quick terminal and emit one row per pane
+    /// whose ghostty surface still has a foreground process running.
+    private func collectRunningProcessRows() -> [RunningProcessRow] {
+        var rows: [RunningProcessRow] = []
+        let projectsByID = Dictionary(
+            uniqueKeysWithValues: (projectStore?.projects ?? []).map { ($0.id, $0) }
+        )
+
+        for ws in appState?.workspaces.values ?? [:].values {
+            let project = projectsByID[ws.projectID]
+            let projectName = project?.name ?? "Project"
+            for tab in ws.tabs {
+                for pane in tab.splitRoot.allPanes() where pane.nsView?.needsConfirmQuit() == true {
+                    rows.append(RunningProcessRow(
+                        projectName: projectName,
+                        processName: pane.processTitle
+                    ))
+                }
+            }
+        }
+
+        let qtTab = QuickTerminalService.shared.splitState.tab
+        for pane in qtTab.splitRoot.allPanes() where pane.nsView?.needsConfirmQuit() == true {
+            rows.append(RunningProcessRow(
+                projectName: "Quick Terminal",
+                processName: pane.processTitle
+            ))
+        }
+
+        return rows
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_: NSApplication) -> Bool {

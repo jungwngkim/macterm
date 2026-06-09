@@ -247,6 +247,20 @@ final class MainAppResponder: KeyResponder {
             return .handled
         }
 
+        // Rename routes through AppCommand.action(in:) — the single source of
+        // truth shared with the palette and menu bar — so the three paths can't
+        // drift. The action defers begin-editing a tick (see AppCommandActions)
+        // so the sidebar row's TextField exists before it takes first responder.
+        for action in [HotkeyAction.renameTab, .renameProject] {
+            guard HotkeyRegistry.matches(event, action: action),
+                  let command = AppCommand.allCases.first(where: { $0.hotkeyAction == action })
+            else { continue }
+            let ctx = AppCommandContext(appState: appState, projectStore: projectStore)
+            guard let run = command.action(in: ctx) else { return .passThrough }
+            run()
+            return .handled
+        }
+
         // Cmd+1-9 tab selection. Must check after the configurable hotkeys
         // so user bindings take precedence over digits.
         if flags == .command {

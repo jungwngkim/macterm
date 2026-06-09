@@ -146,9 +146,9 @@ enum AppCommand: String, CaseIterable, Identifiable {
         case .toggleCommandPalette: .toggleCommandPalette
         case .reloadGhosttyConfig: .reloadGhosttyConfig
         case .toggleQuickTerminal: .toggleQuickTerminal
-        case .renameTab,
-             .renameProject,
-             .removeProject,
+        case .renameTab: .renameTab
+        case .renameProject: .renameProject
+        case .removeProject,
              .replaceProjectPathWithCurrentDir,
              .applyLayout,
              .saveLayout: nil
